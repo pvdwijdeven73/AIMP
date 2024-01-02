@@ -1,0 +1,22 @@
+Projects/
+Test/
+.vscode/
+.ipynb_checkpoints/
+_pychache_/
+__pycache__/CheckFSC2SM.cpython-310.pyc
+__pycache__/CreateAIMPxlsx.cpython-310.pyc
+__pycache__/EBtoDB.cpython-310.pyc
+__pycache__/EBtoDB.cpython-311.pyc
+__pycache__/iFATprepare.cpython-310.pyc
+__pycache__/IOCount.cpython-310.pyc
+__pycache__/routines.cpython-310.pyc
+__pycache__/routines.cpython-311.pyc
+__pycache__/SPIMatch.cpython-310.pyc
+__pycache__/TagFromAM.cpython-310.pyc
+__pycache__/test_sub.cpython-310.pyc
+__pycache__/XLSMerge.cpython-310.pyc
+__pycache__/XLSXtoEB.cpython-310.pyc
+AIMP - workspace.code-workspace
+output_file-PER-L-94003.xlsx
+output_file.xlsx
+output_file.xlsm
