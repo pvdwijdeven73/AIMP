@@ -79,6 +79,8 @@ dict_FLI = {}
 dict_DLI = {}
 prevline = ""
 itemname = ""
+curCMIabb = None
+cur_mod = None
 
 display = "Display"
 for line in lines:
@@ -413,6 +415,7 @@ def get_param(display, shape, line):
 
 FLI_dict = {}
 item_name = ""
+cur_item = []
 for item1 in dict_FLI:
     for item2 in dict_FLI[item1]:
         if item2[0].isnumeric():

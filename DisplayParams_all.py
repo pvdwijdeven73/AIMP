@@ -296,7 +296,7 @@ def main():
     # Requires: Excel file of EB of phase (via EBtoDB.py) or dummy file with column &N containing tag names
     #           name: {project}_export_EB_total_{phase}.xlsx
     # Requires: htm files in Projects\\{project}\\Displays\\{phase}
-    project = DisplayParams("CEOD", "2023-12-06")
+    project = DisplayParams("CEOD", "2024-01-03")
 
 
 if __name__ == "__main__":
