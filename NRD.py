@@ -4,12 +4,10 @@ from datetime import datetime
 
 MAX_DAYS_OLD = 2 * 365
 set_time = datetime(
-    year=2023, month=1, day=1, hour=12, minute=34, second=56
+    year=2024, month=1, day=1, hour=12, minute=34, second=56
 ).timestamp()
 
-root = (
-    r"C:\Users\p.vandewijdeven\OneDrive - Shell\PY\AIMP\Projects\CEOD\Yoko export\GE2K"
-)
+root = r"C:\Users\p.vandewijdeven\OneDrive - Shell\PY\AIMP\Projects\CEOD\Displays\CDA"
 
 
 def show_files():
@@ -28,6 +26,7 @@ def show_files():
 
 
 def change_files():
+    pattern = "*.*"
     for path, subdirs, files in os.walk(root):
         for name in files:
             if fnmatch(name, pattern):
@@ -39,4 +38,4 @@ def change_files():
 
 
 show_files()
-# change_files()
+change_files()
