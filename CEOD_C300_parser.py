@@ -250,8 +250,8 @@ def write_sequence_word(TR_dict, STEP_dict, path, filename_output):
 
 def main():
     system("cls")
-    path = "projects/CEOD/Hon/Sequences2/"
-    if False:
+    path = "projects/CEOD/Hon/drain_seq/"
+    if True:
         filenames = glob(path + "*.cnf.xml")
 
         for filename_long in filenames:
@@ -270,7 +270,7 @@ def main():
             write_sequence_word(TR_dict, STEP_dict, path, filename_output_word)
         dprint(f"DONE!", "IMPORTANT")
     else:
-        filename = "103-3S.cnf.xml"
+        filename = "30UZ530ST.cnf.xml"
         filename_output_excel = filename.replace(".cnf.xml", ".xlsx")
         filename_output_word = filename.replace(".cnf.xml", ".docx")
 
