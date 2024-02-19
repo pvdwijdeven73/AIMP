@@ -144,7 +144,7 @@ class IOCount:
 
         df_IO = self.is_prox(df_IO, proxes)
         df_cards = df_IO.drop_duplicates(subset=["CARDNAME"], keep="first")
-        IO_card_counts = pd.DataFrame(df_cards["TYPE"].value_counts())
+        IO_card_counts: typing.Any = pd.DataFrame(df_cards["TYPE"].value_counts())
         IO_card_counts = IO_card_counts.reset_index()
         IO_card_counts.rename(columns={"index": "TYPE", "TYPE": "AMOUNT"}, inplace=True)
         df_temp = pd.DataFrame(
