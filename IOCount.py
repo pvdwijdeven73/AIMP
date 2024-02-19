@@ -225,7 +225,7 @@ def get_IO_count(proj, phase) -> dict:
 
 def main():
     system("cls")
-    project = IOCount("Demin")
+    project = IOCount("PGPMODB")
 
 
 if __name__ == "__main__":
