@@ -111,17 +111,21 @@ def write_sequence_word(TR_dict, STEP_dict, path, filename_output):
                 expr = STEP_dict[step][f"OP[{OP}].INSTRUCTION"].replace('"', "")
                 desc = STEP_dict[step][f"OP[{OP}].DESC"].replace('"', "")
                 delay = int(STEP_dict[step][f"OP[{OP}].DELAYTIME"])
+                niec = STEP_dict[step][f"OP[{OP}].TYPE"].replace('"', "")
             elif instr == "None":
                 # expression found
                 expr = STEP_dict[step][f"OP[{OP}].SRCEXPR"].replace('"', "")
                 desc = STEP_dict[step][f"OP[{OP}].DESC"].replace('"', "")
                 delay = int(STEP_dict[step][f"OP[{OP}].DELAYTIME"])
+                niec = STEP_dict[step][f"OP[{OP}].TYPE"].replace('"', "")
             else:
                 dprint(f"Strange instruction type found {instr}", "RED")
             if delay > 0:
                 delay = f" - {delay} seconds delay"
             else:
                 delay = ""
+            if niec == "N_IEC":
+                delay += " - N_IEC applied"
             # print(f"{expr} - {desc} - #{OP}{delay}")
             step_lst.append([expr, desc, f"#{OP}{delay}"])
             OP += 1
@@ -250,7 +254,7 @@ def write_sequence_word(TR_dict, STEP_dict, path, filename_output):
 
 def main():
     system("cls")
-    path = "projects/CEOD/Hon/drain_seq/"
+    path = "projects/CEOD/Hon/SequencesFAT/"
     if True:
         filenames = glob(path + "*.cnf.xml")
 
