@@ -142,9 +142,9 @@ class DisplayParams:
                                     result["src"].upper()
                                     == "All_DspTitle_eoc_01.sha".upper()
                                 ):
-                                    dict_disp_dates[displayname][
-                                        "Title_shape"
-                                    ] = result["Title"]
+                                    dict_disp_dates[displayname]["Title_shape"] = (
+                                        result["Title"]
+                                    )
                                     dict_disp_dates[displayname]["Title_compare"] = (
                                         ""
                                         if (
