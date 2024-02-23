@@ -223,7 +223,7 @@ class ErrorLog:
 
     def get_df(self, req_key: str = "", fill_all: Boolean = False):
         self.make_readable(req_key)
-        df_error_log: pd.DataFrame = pd.DataFrame.from_dict(self.df_readable).fillna("")
+        df_error_log: pd.DataFrame = pd.DataFrame(self.df_readable).fillna("")
         df_error_log.columns = ["PNTTYPE", "Item", "Description"]
         if fill_all:
             df_error_log = df_error_log.replace(r"^s*$", float("NaN"), regex=True)
@@ -418,8 +418,8 @@ def show_df(df: pd.DataFrame):
     Quickly show complete dataframe
     """
     # more options can be specified also
-    pd.options.display.max_rows = None
-    pd.options.display.max_columns = None
+    pd.options.display.max_rows = None  # type: ignore
+    pd.options.display.max_columns = None  # type: ignore
     print(df)
     pd.reset_option("all")
 
@@ -444,7 +444,7 @@ def file_exists(filename: str) -> typing.Any:
 # This function imports the database, (.dbf or .xls/xlsx)
 def read_db(
     path: str, filename: str, sheet: typing.Union[str, int, None] = 0
-) -> pd.DataFrame:
+) -> dict | pd.DataFrame:
     """
     import database with correct coding
     """

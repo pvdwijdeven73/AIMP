@@ -3,7 +3,7 @@ import numpy as np
 
 
 from datetime import datetime
-from os import walk, getcwd, system, path
+from os import system, path
 from colorama import Fore
 from glob import glob
 from routines import format_excel, ProjDetails
@@ -11,10 +11,10 @@ from tqdm import tqdm
 
 
 class DisplayParams:
-    def __init__(self, project: str, phase: str):
-        self.start(project, phase)
+    def __init__(self, project: str, phase: str) -> None:
+        self.start(project=project, phase=phase)
 
-    def get_param(self, line, param, log, sep=":", end=" "):
+    def get_param(self, line, param, log, sep=":", end=" ") -> str:
         try:
             pos_start = line.upper().index(param.upper())
             pos_sep = line[pos_start:].index(sep)
@@ -25,26 +25,44 @@ class DisplayParams:
                 log.append(f"exception found for param {param}. Line: {line}")
             return ""
 
-    def get_title(self, line: str, log):
-        return self.get_param(line, "<TITLE", log, ">", "</TITLE>")
+    def get_title(self, line: str, log) -> str:
+        return self.get_param(
+            line=line, param="<TITLE", log=log, sep=">", end="</TITLE>"
+        )
 
-    def create_params(self, line: str, tagname, log):
+    def create_params(self, line: str, tagname, log) -> dict:
         params = {}
-        params["id"] = self.get_param(line, "id", log, "=")
-        params["HEIGHT"] = self.get_param(line, "HEIGHT", log, ": ", "; ")
-        params["WIDTH"] = self.get_param(line, "WIDTH", log, ": ", "; ")
-        params["LEFT"] = self.get_param(line, "LEFT", log, ": ", "; ")
-        params["TOP"] = self.get_param(line, "TOP", log, ": ", "; ")
-        params["src"] = self.get_param(line, "src", log, ' = "', '" ')
+        params["id"] = self.get_param(line=line, param="id", log=log, sep="=")
+        params["HEIGHT"] = self.get_param(
+            line=line, param="HEIGHT", log=log, sep=": ", end="; "
+        )
+        params["WIDTH"] = self.get_param(
+            line=line, param="WIDTH", log=log, sep=": ", end="; "
+        )
+        params["LEFT"] = self.get_param(
+            line=line, param="LEFT", log=log, sep=": ", end="; "
+        )
+        params["TOP"] = self.get_param(
+            line=line, param="TOP", log=log, sep=": ", end="; "
+        )
+        params["src"] = self.get_param(
+            line=line, param="src", log=log, sep=' = "', end='" '
+        )
         test = params["src"]
-        params["display"] = self.get_param(test, ".", log, "\\", "_files")
-        params["shape"] = self.get_param(test, ".", log, "_files\\", ".sha").upper()
-        params["src"] = params["src"].split("\\")[-1]
+        params["display"] = self.get_param(
+            line=test, param=".", log=log, sep="\\", end="_files"
+        )
+        params["shape"] = self.get_param(
+            line=test, param=".", log=log, sep="_files\\", end=".sha"
+        ).upper()
+        params["src"] = params["src"].split(sep="\\")[-1]
 
-        temp = self.get_param(line, "parameters", log, ' = "', '" ')
+        temp = self.get_param(
+            line=line, param="parameters", log=log, sep=' = "', end='" '
+        )
         temp = temp.replace("&amp;", "&")
         temp = temp.replace("&#10;", "")
-        temp1 = temp.split(";")
+        temp1 = temp.split(sep=";")
         temp2 = {}
         for param in temp1:
             if param == "":
@@ -58,10 +76,10 @@ class DisplayParams:
 
         return params
 
-    def write_Overview(self, folder_displays, file_output, project, phase):
+    def write_Overview(self, folder_displays, file_output, project, phase) -> None:
         log = []
         if project != "Test":
-            my_proj = ProjDetails(project)
+            my_proj = ProjDetails(project=project)
             my_path = my_proj.path
             try:
                 df_tags = pd.read_excel(
@@ -94,7 +112,7 @@ class DisplayParams:
 
         print(f"{Fore.YELLOW}{len(tag_list)} tags found{Fore.RESET}")
 
-        filenames = glob(folder_displays + "\\*.htm")
+        filenames = glob(pathname=folder_displays + "\\*.htm")
         print(f"{Fore.YELLOW}{len(filenames)} displays found{Fore.RESET}")
 
         total = {}
@@ -105,7 +123,7 @@ class DisplayParams:
         dict_disp_dates = {}
 
         for file in tqdm(filenames):
-            with open(file, "r") as f:
+            with open(file=file, mode="r") as f:
                 text = f.readlines()
                 found = ""
                 title = ""
@@ -113,22 +131,24 @@ class DisplayParams:
                 dict_disp_dates[display_name] = {}
                 dict_disp_dates[display_name]["Display"] = display_name
                 dict_disp_dates[display_name]["Modified"] = datetime.utcfromtimestamp(
-                    path.getmtime(file)
+                    path.getmtime(filename=file)
                 ).strftime("%Y-%m-%d %H:%M:%S")
                 for line in text:
                     if title == "":
                         if "<TITLE>" in line:
-                            title = self.get_title(line, log)
+                            title = self.get_title(line=line, log=log)
                             dict_disp_dates[display_name]["Title_head"] = title
                     if found != "":
                         found += line
                         if '">' in line:
                             found = found.replace("\r", "").replace("\n", "")
-                            found = found.split('">', 1)[0]
+                            found = found.split(sep='">', maxsplit=1)[0]
                             tag_dummy = True
                             for tagname in tag_list:
                                 if tagname in found:
-                                    result = self.create_params(found, tagname, log)
+                                    result = self.create_params(
+                                        line=found, tagname=tagname, log=log
+                                    )
                                     if result["shape"] in total:
                                         total[result["shape"]].append(result)
                                     else:
@@ -147,7 +167,9 @@ class DisplayParams:
                                     )
                                     tag_dummy = False
                             if tag_dummy:
-                                result = self.create_params(found, "", log)
+                                result = self.create_params(
+                                    line=found, tagname="", log=log
+                                )
                                 if (
                                     result["src"].upper()
                                     == "All_DspTitle_eoc_01.sha".upper()
@@ -190,7 +212,7 @@ class DisplayParams:
         id = 0
         sheets = []
         for shape in sorted(total):
-            df[shape] = pd.DataFrame(total[shape]).drop_duplicates()
+            df[shape] = pd.DataFrame(data=total[shape]).drop_duplicates()
             shapetxt = shape
             if len(shapetxt) > 28:
                 shapetxt = f"_{shapetxt[len(shapetxt) - 29 :]}"
@@ -209,12 +231,12 @@ class DisplayParams:
             "=HYPERLINK("
             + chr(34)
             + "#"
-            + df_shape["Sheet"].astype(str)
+            + df_shape["Sheet"].astype(dtype=str)
             + "!A1"
             + chr(34)
             + ","
             + chr(34)
-            + df_shape["Sheet"].astype(str)
+            + df_shape["Sheet"].astype(dtype=str)
             + chr(34)
             + ")"
         )
@@ -242,10 +264,12 @@ class DisplayParams:
         else:
             filename = f"Projects\\{project}\\{file_output}"
 
-        with pd.ExcelWriter(filename, mode="w") as writer:
-            df_shape.to_excel(writer, sheet_name="Index", index=False)
-            disp_overview.to_excel(writer, sheet_name="DisplayList", index=False)
-            tag_disp.to_excel(writer, sheet_name="Overview", index=False)
+        with pd.ExcelWriter(path=filename, mode="w") as writer:
+            df_shape.to_excel(excel_writer=writer, sheet_name="Index", index=False)
+            disp_overview.to_excel(
+                excel_writer=writer, sheet_name="DisplayList", index=False
+            )
+            tag_disp.to_excel(excel_writer=writer, sheet_name="Overview", index=False)
 
             sheets = []
             for shape in sorted(df):
@@ -273,16 +297,18 @@ class DisplayParams:
                     df[shape].to_excel(writer, sheet_name=shapetxt, index=False)
                     sheets.append(shapetxt)
             if len(log) > 0:
-                pd.DataFrame(log).to_excel(writer, sheet_name="Exceptions", index=False)
+                pd.DataFrame(data=log).to_excel(
+                    excel_writer=writer, sheet_name="Exceptions", index=False
+                )
         print(f"{Fore.YELLOW}Formatting Excel...{Fore.RESET}")
         if project == "Test":
-            format_excel(f"Test\\", "Display_params.xlsx")
+            format_excel(path=f"Test\\", filename="Display_params.xlsx")
         else:
-            format_excel(f"Projects\\{project}\\", file_output)
+            format_excel(path=f"Projects\\{project}\\", filename=file_output)
 
         return
 
-    def start(self, project, phase):
+    def start(self, project, phase) -> None:
         print(
             f"{Fore.MAGENTA}Creating display overview for {Fore.GREEN}{project}{Fore.MAGENTA}{Fore.RESET}"
         )
@@ -294,18 +320,23 @@ class DisplayParams:
             Export_display_folder = f"Projects\\{project}\\Displays\\{phase}"
             Export_output_file = f"{project}_Display_Params_{phase}_ALL.xlsx"
 
-        self.write_Overview(Export_display_folder, Export_output_file, project, phase)
+        self.write_Overview(
+            folder_displays=Export_display_folder,
+            file_output=Export_output_file,
+            project=project,
+            phase=phase,
+        )
         print(
             f"{Fore.MAGENTA}Finished creating display overview for {Fore.GREEN}{project}{Fore.MAGENTA}{Fore.RESET}"
         )
 
 
-def main():
-    system("cls")
+def main() -> None:
+    system(command="cls")
     # Optional: Excel file of EB of phase (via EBtoDB.py) or dummy file with column &N containing tag names
     #           name: {project}_export_EB_total_{phase}.xlsx
     # Required: htm files in Projects\\{project}\\Displays\\{phase}
-    project = DisplayParams("CEOD", "Test")
+    project = DisplayParams(project="CEOD", phase="Test")
 
 
 if __name__ == "__main__":
