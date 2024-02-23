@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 
 
-# from pandasgui import show as show_df
 from datetime import datetime
 from os import walk, getcwd, system, path
 from colorama import Fore
@@ -15,44 +14,38 @@ class DisplayParams:
     def __init__(self, project: str, phase: str):
         self.start(project, phase)
 
-    def getParam(self, line, param, log, sep=":", end=" "):
+    def get_param(self, line, param, log, sep=":", end=" "):
         try:
-            # print(line)
             pos_start = line.upper().index(param.upper())
-            # print(pos_start)
             pos_sep = line[pos_start:].index(sep)
-            # print(pos_sep)
             pos_end = line[pos_sep + pos_start :].index(end)
-            # print(pos_end)
             return line[pos_start + pos_sep + len(sep) : pos_end + pos_start + pos_sep]
         except:
             if param != "Point?tagname":
                 log.append(f"exception found for param {param}. Line: {line}")
             return ""
 
-    def getTitle(self, line: str, log):
-        return self.getParam(line, "<TITLE", log, ">", "</TITLE>")
+    def get_title(self, line: str, log):
+        return self.get_param(line, "<TITLE", log, ">", "</TITLE>")
 
-    def createParams(self, line: str, tagname, log):
+    def create_params(self, line: str, tagname, log):
         params = {}
-        params["id"] = self.getParam(line, "id", log, "=")
-        params["HEIGHT"] = self.getParam(line, "HEIGHT", log, ": ", "; ")
-        params["WIDTH"] = self.getParam(line, "WIDTH", log, ": ", "; ")
-        params["LEFT"] = self.getParam(line, "LEFT", log, ": ", "; ")
-        params["TOP"] = self.getParam(line, "TOP", log, ": ", "; ")
-        params["src"] = self.getParam(line, "src", log, ' = "', '" ')
+        params["id"] = self.get_param(line, "id", log, "=")
+        params["HEIGHT"] = self.get_param(line, "HEIGHT", log, ": ", "; ")
+        params["WIDTH"] = self.get_param(line, "WIDTH", log, ": ", "; ")
+        params["LEFT"] = self.get_param(line, "LEFT", log, ": ", "; ")
+        params["TOP"] = self.get_param(line, "TOP", log, ": ", "; ")
+        params["src"] = self.get_param(line, "src", log, ' = "', '" ')
         test = params["src"]
-        params["display"] = self.getParam(test, ".", log, "\\", "_files")
-        params["shape"] = self.getParam(test, ".", log, "_files\\", ".sha").upper()
+        params["display"] = self.get_param(test, ".", log, "\\", "_files")
+        params["shape"] = self.get_param(test, ".", log, "_files\\", ".sha").upper()
         params["src"] = params["src"].split("\\")[-1]
 
-        temp = self.getParam(line, "parameters", log, ' = "', '" ')
+        temp = self.get_param(line, "parameters", log, ' = "', '" ')
         temp = temp.replace("&amp;", "&")
         temp = temp.replace("&#10;", "")
         temp1 = temp.split(";")
         temp2 = {}
-        # params["Tagname"] = tagname
-        # params["Point?tagname"] = self.getParam(line, "Point?tagname", log, ":", ";")
         for param in temp1:
             if param == "":
                 break
@@ -60,10 +53,8 @@ class DisplayParams:
                 param_name = param[param.index("?") + 1 : param.index(":")]
                 param_value = param[param.index(":") + 1 :]
                 params[param_name] = param_value
-                # params['parameters'] = temp2
             except:
                 print(temp1)
-        # params["Line"] = line
 
         return params
 
@@ -72,15 +63,35 @@ class DisplayParams:
         if project != "Test":
             my_proj = ProjDetails(project)
             my_path = my_proj.path
-            df_tags = pd.read_excel(
-                my_path + f"EB\\{phase}\\" + f"{project}_export_EB_total_{phase}.xlsx"
-            )
+            try:
+                df_tags = pd.read_excel(
+                    my_path
+                    + f"EB\\{phase}\\"
+                    + f"{project}_export_EB_total_{phase}.xlsx"
+                )
+                df_tags_created = True
+            except FileNotFoundError:
+                print(
+                    f"{Fore.RED}Warning: no taglist found, continue with empty taglist{Fore.RESET}"
+                )
+                df_tags_created = False
         else:
-            df_tags = pd.read_excel(
-                "Test\\" + f"{project}_export_EB_total_{phase}.xlsx"
-            )
+            try:
+                df_tags = pd.read_excel(
+                    "Test\\" + f"{project}_export_EB_total_{phase}.xlsx"
+                )
+                df_tags_created = True
+            except FileNotFoundError:
+                print(
+                    f"{Fore.RED}Warning: no taglist found, continue with empty taglist{Fore.RESET}"
+                )
+                df_tags_created = False
 
-        tag_list = df_tags["&N"]
+        if not df_tags_created:
+            tag_list = []
+        else:
+            tag_list = df_tags["&N"]
+
         print(f"{Fore.YELLOW}{len(tag_list)} tags found{Fore.RESET}")
 
         filenames = glob(folder_displays + "\\*.htm")
@@ -94,22 +105,21 @@ class DisplayParams:
         dict_disp_dates = {}
 
         for file in tqdm(filenames):
-            # with open(display_dir + "\\" + file, "r") as f:
             with open(file, "r") as f:
                 text = f.readlines()
                 found = ""
                 title = ""
-                displayname = file.split("\\")[-1]
-                dict_disp_dates[displayname] = {}
-                dict_disp_dates[displayname]["Display"] = displayname
-                dict_disp_dates[displayname]["Modified"] = datetime.utcfromtimestamp(
+                display_name = file.split("\\")[-1]
+                dict_disp_dates[display_name] = {}
+                dict_disp_dates[display_name]["Display"] = display_name
+                dict_disp_dates[display_name]["Modified"] = datetime.utcfromtimestamp(
                     path.getmtime(file)
                 ).strftime("%Y-%m-%d %H:%M:%S")
                 for line in text:
                     if title == "":
                         if "<TITLE>" in line:
-                            title = self.getTitle(line, log)
-                            dict_disp_dates[displayname]["Title_head"] = title
+                            title = self.get_title(line, log)
+                            dict_disp_dates[display_name]["Title_head"] = title
                     if found != "":
                         found += line
                         if '">' in line:
@@ -118,14 +128,14 @@ class DisplayParams:
                             tag_dummy = True
                             for tagname in tag_list:
                                 if tagname in found:
-                                    result = self.createParams(found, tagname, log)
+                                    result = self.create_params(found, tagname, log)
                                     if result["shape"] in total:
                                         total[result["shape"]].append(result)
                                     else:
                                         total[result["shape"]] = [result]
                                     tag_disp.append(
                                         [
-                                            displayname,
+                                            display_name,
                                             tagname,
                                             title,
                                             result["shape"],
@@ -137,19 +147,19 @@ class DisplayParams:
                                     )
                                     tag_dummy = False
                             if tag_dummy:
-                                result = self.createParams(found, "", log)
+                                result = self.create_params(found, "", log)
                                 if (
                                     result["src"].upper()
                                     == "All_DspTitle_eoc_01.sha".upper()
                                 ):
-                                    dict_disp_dates[displayname]["Title_shape"] = (
+                                    dict_disp_dates[display_name]["Title_shape"] = (
                                         result["Title"]
                                     )
-                                    dict_disp_dates[displayname]["Title_compare"] = (
+                                    dict_disp_dates[display_name]["Title_compare"] = (
                                         ""
                                         if (
-                                            dict_disp_dates[displayname]["Title_shape"]
-                                            == dict_disp_dates[displayname][
+                                            dict_disp_dates[display_name]["Title_shape"]
+                                            == dict_disp_dates[display_name][
                                                 "Title_head"
                                             ]
                                         )
@@ -161,7 +171,7 @@ class DisplayParams:
                                     total[result["shape"]] = [result]
                                 tag_disp.append(
                                     [
-                                        displayname,
+                                        display_name,
                                         "",
                                         title,
                                         result["shape"],
@@ -284,7 +294,6 @@ class DisplayParams:
             Export_display_folder = f"Projects\\{project}\\Displays\\{phase}"
             Export_output_file = f"{project}_Display_Params_{phase}_ALL.xlsx"
 
-        # self.get_params_list(EB_path)
         self.write_Overview(Export_display_folder, Export_output_file, project, phase)
         print(
             f"{Fore.MAGENTA}Finished creating display overview for {Fore.GREEN}{project}{Fore.MAGENTA}{Fore.RESET}"
@@ -293,10 +302,10 @@ class DisplayParams:
 
 def main():
     system("cls")
-    # Requires: Excel file of EB of phase (via EBtoDB.py) or dummy file with column &N containing tag names
+    # Optional: Excel file of EB of phase (via EBtoDB.py) or dummy file with column &N containing tag names
     #           name: {project}_export_EB_total_{phase}.xlsx
-    # Requires: htm files in Projects\\{project}\\Displays\\{phase}
-    project = DisplayParams("CEOD", "2024-02-07")
+    # Required: htm files in Projects\\{project}\\Displays\\{phase}
+    project = DisplayParams("CEOD", "Test")
 
 
 if __name__ == "__main__":

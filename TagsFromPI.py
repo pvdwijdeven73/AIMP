@@ -21,11 +21,23 @@ for x in totalLine:
 
 
 split_line = totnew.split("COD:")
-print(len(split_line))
+first = True
+arr = []
 for s_line in split_line:
-    res_end = s_line.find(chr(32))
-    print(s_line[:res_end])
-
+    if not first:
+        res_end0 = s_line.find(" ")
+        if res_end0 == -1:
+            res_end0 = 99999999
+        res_end1 = s_line.find(".")
+        if res_end1 == -1:
+            res_end1 = 99999999
+        res_end = min(res_end0, res_end1)
+        arr.append(s_line[:res_end])
+    else:
+        first = False
+arr = list(set(arr))
+arr.sort()
+print(arr)
 
 # encodings_to_try = ["utf-8", "latin-1", "utf-16"]
 
