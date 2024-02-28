@@ -1,9 +1,6 @@
 # import libraries
 import pandas as pd
-import numpy as np
 import os
-from simpledbf import Dbf5
-import win32com.client as win32
 from routines import format_excel, check_folder, read_db, file_exists, dprint
 from colorama import Fore, Back
 
@@ -18,80 +15,71 @@ class XLSMerge:
         phase: str = "Original",
         isPLC: bool = True,
         open: bool = True,
-    ):
-        self.start(project, phase, isPLC, open)
+    ) -> None:
+        self.start(project=project, phase=phase, isPLC=isPLC, open=open)
 
-    def get_files(self, input_path, output_file):
+    def get_files(self, input_path, output_file) -> list[str]:
         all_files = []
-        # all_files=[["1FGS6_63.xls","1FGS6_63"],["2FGS5_52.xls","2FGS5_52"],["11CD6.xls","11CD6"],["12CD6.xls","12CD6"],["13CD6.xls","13CD6"],["14CD6.xls","14CD6"]]
-
-        if all_files == []:
-            files = os.listdir(path=input_path)
-            for file in files:
-                if file != output_file and "." in file:
-                    all_files.append([file, file.split(".", 1)[0]])
-
+        files = os.listdir(path=input_path)
+        for file in files:
+            if file != output_file and "." in file:
+                all_files.append([file, file.split(".", 1)[0]])
         return all_files
 
     def read_and_merge(
         self, all_files, input_path, output_path, output_file, isPLC, open
-    ):
+    ) -> None:
         lst_db_SM = []
         lst_db_FSC = []
         lst_db = []
-
         db_FSC = pd.DataFrame()
         db_SM = pd.DataFrame()
         db = pd.DataFrame()
-
         for curFile in all_files:
-            curDB = read_db(input_path, curFile[0])
-
+            curDB = read_db(path=input_path, filename=curFile[0])
+            assert isinstance(curDB, pd.DataFrame)
             if isPLC:
-                curDB.insert(0, "PLC", curFile[1])
+                curDB.insert(loc=0, column="PLC", value=curFile[1])
                 if curDB.columns[1] == "TYPE":
                     lst_db_FSC.append(curDB)
                 else:
                     lst_db_SM.append(curDB)
             else:
-                curDB.insert(0, "File", curFile[1])
+                curDB.insert(loc=0, column="File", value=curFile[1])
                 lst_db.append(curDB)
-
         if isPLC:
             if len(lst_db_SM) > 1:
-                db_SM = pd.concat(lst_db_SM)
+                db_SM = pd.concat(objs=lst_db_SM)
             elif len(lst_db_SM) == 1:
                 db_SM = lst_db_SM[0]
             if len(lst_db_FSC) > 1:
-                db_FSC = pd.concat(lst_db_FSC)
+                db_FSC = pd.concat(objs=lst_db_FSC)
             elif len(lst_db_FSC) == 1:
                 db_FSC = lst_db_FSC[0]
         else:
             if len(lst_db) > 1:
-                db = pd.concat(lst_db)
+                db = pd.concat(objs=lst_db)
             elif len(lst_db) == 1:
                 db = lst_db[0]
-
-        check_folder(output_path)
-
+        check_folder(folder=output_path)
         if isPLC:
-            with pd.ExcelWriter(f"{output_path}{output_file}") as writer:
+            with pd.ExcelWriter(path=f"{output_path}{output_file}") as writer:
                 if len(lst_db_FSC) > 0:
-                    dprint("- Writing joined FSC", "YELLOW")
+                    dprint(text="- Writing joined FSC", color="YELLOW")
                     db_FSC.to_excel(writer, sheet_name="FSC", index=False)
                 if len(lst_db_SM) > 0:
-                    dprint("- Writing joined SM", "YELLOW")
+                    dprint(text="- Writing joined SM", color="YELLOW")
                     db_SM.to_excel(writer, sheet_name="SM", index=False)
         else:
-            with pd.ExcelWriter(f"{output_path}{output_file}") as writer:
-                dprint("- Writing joined DB", "YELLOW")
+            with pd.ExcelWriter(path=f"{output_path}{output_file}") as writer:
+                dprint(text="- Writing joined DB", color="YELLOW")
                 db.to_excel(writer, sheet_name="Merged Files", index=False)
         if open:
-            dprint("- Formatting Excel", "YELLOW")
+            dprint(text="- Formatting Excel", color="YELLOW")
 
-            format_excel(output_path, output_file, open)
+            format_excel(path=output_path, filename=output_file, first_time=open)
 
-    def start(self, project, phase, isPLC, open):
+    def start(self, project, phase, isPLC, open) -> None:
         print(
             f"{Fore.MAGENTA}Creating PLC files for {Fore.GREEN}{project}{Fore.MAGENTA}, phase {Fore.GREEN}{phase}{Fore.RESET}"
         )
@@ -103,14 +91,13 @@ class XLSMerge:
             input_path = f"Projects\\{project}\\PLCs\\{phase}\\"
             output_path = f"Projects\\{project}\\PLCs\\{phase}\\Merged\\"
             output_file = f"{project}_total_PLCs_{phase}.xlsx"
-
         self.read_and_merge(
-            self.get_files(input_path, output_file),
-            input_path,
-            output_path,
-            output_file,
-            isPLC,
-            open,
+            all_files=self.get_files(input_path=input_path, output_file=output_file),
+            input_path=input_path,
+            output_path=output_path,
+            output_file=output_file,
+            isPLC=isPLC,
+            open=open,
         )
         print(
             f"{Fore.MAGENTA}Done creating PLC files for {Fore.GREEN}{project}{Fore.MAGENTA}, phase {Fore.GREEN}{phase}{Fore.RESET}"
@@ -120,16 +107,13 @@ class XLSMerge:
 def get_plc(proj, phase, plc_type="FSC") -> pd.DataFrame:
     projpath = f"Projects\\{proj}\\"
     if not file_exists(
-        projpath + f"PLCs\\{phase}\\Merged\\{proj}_total_PLCs_{phase}.xlsx"
+        filename=projpath + f"PLCs\\{phase}\\Merged\\{proj}_total_PLCs_{phase}.xlsx"
     ):
-        result = XLSMerge(proj, phase, True, False)
-
+        _result = XLSMerge(project=proj, phase=phase, isPLC=True, open=False)
     try:
-
-        dprint(f"- Loading {phase} PLCs file ({plc_type})", "CYAN")
-
+        dprint(text=f"- Loading {phase} PLCs file ({plc_type})", color="CYAN")
         return pd.read_excel(
-            projpath + f"PLCs\\{phase}\\Merged\\{proj}_total_PLCs_{phase}.xlsx",
+            io=projpath + f"PLCs\\{phase}\\Merged\\{proj}_total_PLCs_{phase}.xlsx",
             sheet_name=plc_type,
         )
     except FileNotFoundError:
@@ -138,13 +122,13 @@ def get_plc(proj, phase, plc_type="FSC") -> pd.DataFrame:
             f"'{proj}_total_PLCs_{phase}.xlsx' not found in "
             f"'Projects\\{proj}\\PLCs\\{phase}\\Merged\\'"
         )
-        exit(f"ABORTED: File not found{RESET}")
+        exit(code=f"ABORTED: File not found{RESET}")
     except ValueError:
         return pd.DataFrame()
 
 
-def main():
-    project = XLSMerge("PGPMODC", "Original", True)
+def main() -> None:
+    _project = XLSMerge(project="CVP_MOD11", phase="Original", isPLC=True)
 
 
 if __name__ == "__main__":

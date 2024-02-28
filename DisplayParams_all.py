@@ -83,7 +83,7 @@ class DisplayParams:
             my_path = my_proj.path
             try:
                 df_tags = pd.read_excel(
-                    my_path
+                    io=my_path
                     + f"EB\\{phase}\\"
                     + f"{project}_export_EB_total_{phase}.xlsx"
                 )
@@ -96,7 +96,7 @@ class DisplayParams:
         else:
             try:
                 df_tags = pd.read_excel(
-                    "Test\\" + f"{project}_export_EB_total_{phase}.xlsx"
+                    io="Test\\" + f"{project}_export_EB_total_{phase}.xlsx"
                 )
                 df_tags_created = True
             except FileNotFoundError:
@@ -224,7 +224,7 @@ class DisplayParams:
                 sheets.append(shapetxt)
         print(f"{Fore.YELLOW}{id} shapes found{Fore.RESET}")
         df_shape = pd.DataFrame.from_dict(
-            df_shape, orient="index", columns=["Shape", "Sheet", "#occurances"]
+            data=df_shape, orient="index", columns=["Shape", "Sheet", "#occurances"]
         )
 
         df_shape["Sheet"] = (
@@ -256,7 +256,7 @@ class DisplayParams:
         )
         tag_disp.drop_duplicates(inplace=True)
 
-        disp_overview = pd.DataFrame(dict_disp_dates).transpose()
+        disp_overview = pd.DataFrame(data=dict_disp_dates).transpose()
 
         print(f"{Fore.YELLOW}Writing to Excel...{Fore.RESET}")
         if project == "Test":
