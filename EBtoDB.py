@@ -20,12 +20,12 @@ RESET = Fore.RESET + Back.RESET
 
 
 class ReadEBFile:
-    def __init__(self, path, filename) -> None:
+    def __init__(self, path: str, filename: str) -> None:
         # initialize class and assign internal values
         self.source = filename
         self.filename = path + filename
         self.lines = ""
-        self.point_types = []
+        self.point_types: list[str] = []
 
     def read_file(self) -> None:
         # open EB files and read-lines.
@@ -53,10 +53,10 @@ class ReadEBFile:
             self.get_point_types()
         # create a dictionary of all point types
         # and also a key containing all point types combined
-        dict_point_types = {"TOTAL": []}
+        dict_point_types: dict[str, list[dict[str, str]]] = {"TOTAL": []}
         for point_type in self.point_types:
             dict_point_types[point_type] = []
-        cur_item = {}
+        cur_item: dict[str, str] = {}
         cur_type = ""
         # scan the lines for new tags and its parameters
         for x in self.lines:
@@ -86,7 +86,7 @@ class ReadEBFile:
         dict_point_types["TOTAL"].append(cur_item)
         dict_point_types[cur_type].append(cur_item)
         # now create a dictionary with point types (and "TOTAL") as keys and dataframes as values
-        self.EBDB = {}
+        self.EBDB: dict[str, pd.DataFrame] = {}
         for sheet in dict_point_types.keys():
             self.EBDB[sheet] = (
                 pd.DataFrame.from_records(data=dict_point_types[sheet])
