@@ -2,6 +2,7 @@
 
 # Import libraries
 import os
+from typing import Any
 import pandas as pd
 import numpy as np
 from routines import (
@@ -10,71 +11,90 @@ from routines import (
     file_exists,
     dprint,
     ProjDetails,
-    assign_sensivity,
 )
 from os import system
 from colorama import Fore, Back
-from math import isnan
 
 ERROR = Fore.WHITE + Back.RED
 RESET = Fore.RESET + Back.RESET
 
 
-class EBFile:
-    def __init__(self, path, filename):
+class ReadEBFile:
+    def __init__(self, path, filename) -> None:
+        # initialize class and assign internal values
         self.source = filename
         self.filename = path + filename
         self.lines = ""
-        self.pnttypes = []
+        self.point_types = []
 
-    def read_file(self):
-        with open(self.filename, "r") as EBtext:
-            self.lines = EBtext.readlines()
-            self.lines = [s.replace("\x00", "") for s in self.lines]
+    def read_file(self) -> None:
+        # open EB files and read-lines.
+        with open(file=self.filename, mode="r", encoding="utf8") as EB_text:
+            self.lines = EB_text.readlines()
+            # NOTE: the encoding to utf8 should take care of replacing \x00
+            # if not: uncomment the following line
+            # * self.lines = [s.replace("\x00", "") for s in self.lines]
 
-    def get_point_types(self):
+    def get_point_types(self) -> list[Any]:
+        # creates a list of all point types
         if self.lines == "":
             self.read_file()
+        # scan every line for point type
         for x in self.lines:
             if "&T" in x:
-                self.pnttypes.append(x[2:].strip())
-        self.pnttypes = list(set(self.pnttypes))
-        return self.pnttypes
+                self.point_types.append(x[2:].strip())
+        # remove duplicate point types
+        self.point_types = list(set(self.point_types))
+        return self.point_types
 
-    def print_file(self):
-        for x in self.lines:
-            print(f"'{x[:-1].strip()}'")
-
-    def create_DB(self):
-        if self.pnttypes == []:
+    def create_DB(self) -> None:
+        # first retrieve list of point types
+        if self.point_types == []:
             self.get_point_types()
-        DB = {"TOTAL": []}
-        for pntt in self.pnttypes:
-            DB[pntt] = []
+        # create a dictionary of all point types
+        # and also a key containing all point types combined
+        dict_point_types = {"TOTAL": []}
+        for point_type in self.point_types:
+            dict_point_types[point_type] = []
         cur_item = {}
         cur_type = ""
+        # scan the lines for new tags and its parameters
         for x in self.lines:
+            # "{" indicates beginning of a new tag
             if x[0] == "{":
-                # new item detected
                 if cur_item != {}:
-                    # print(cur_item["&N"])
-                    DB["TOTAL"].append(cur_item)
-                    DB[cur_type].append(cur_item)
+                    # add previous item to "TOTAL"" and cur_type lists
+                    dict_point_types["TOTAL"].append(cur_item)
+                    dict_point_types[cur_type].append(cur_item)
                     cur_item = {}
             else:
+                # only params starting with "&" are different from other params
+                # example:
+                # * &T DIGINHG
+                # * &N 700TZ015
                 if x[0] == "&":
                     cur_item[x[:2]] = x[2:].strip()
                     if x[:2] == "&T":
                         cur_type = x[2:].strip()
                 else:
+                    # other params are separated by "=" sign and spaces
+                    # example:
+                    # * PTDESC   ="STOOM RS7001/2B HOOGHOOG"
                     loc = x.find("=") + 1
                     cur_item[x[: loc - 1].strip()] = x[loc:].replace('"', "").strip()
-        DB["TOTAL"].append(cur_item)
-        # print(DB['TOTAL'])
-        DB[cur_type].append(cur_item)
+        # add final item to "TOTAL" and cur_type lists
+        dict_point_types["TOTAL"].append(cur_item)
+        dict_point_types[cur_type].append(cur_item)
+        # now create a dictionary with point types (and "TOTAL") as keys and dataframes as values
         self.EBDB = {}
-        for sheet in DB.keys():
-            self.EBDB[sheet] = pd.DataFrame.from_dict(DB[sheet]).fillna("").copy()
+        for sheet in dict_point_types.keys():
+            self.EBDB[sheet] = (
+                pd.DataFrame.from_records(data=dict_point_types[sheet])
+                .fillna(value="")
+                .copy()
+            )
+            # add source (the EB filename) and rename colums where necessary
+            # also put source, tagname (&N) and point type (&T) in front, the other parameters follow alphabetically
             self.EBDB[sheet]["Source"] = self.source
             columns = sorted(self.EBDB[sheet].columns)
             columns.pop(columns.index("&T"))
@@ -92,9 +112,9 @@ class EBtoDB:
         open=True,
         pre_filter=False,
         AM=False,
-    ):
+    ) -> None:
         self.open = open
-        self.start(project, phase, pre_filter, AM)
+        self.start(project=project, phase=phase, pre_filter=pre_filter, AM=AM)
 
     def get_EB(
         self,
@@ -105,8 +125,8 @@ class EBtoDB:
         project,
         phase,
         pre_filter,
-    ):
-        def func_assignPLC(row, boxes, UCN):
+    ) -> None:
+        def func_assignPLC(row, boxes, UCN) -> Any:
             pntbox = 0
             if "HWYNUM" in row.keys():
                 if row["HWYNUM"] != "":
@@ -151,14 +171,15 @@ class EBtoDB:
                     return "UCN"
             return ""
 
+        UCN_filter = []
+        box_filter = []
         if pre_filter:
-            proj = ProjDetails(project)
+            proj = ProjDetails(project=project)
             if phase == "Original":
                 ph = phase
             else:
                 ph = "Migrated"
-            UCN_filter = []
-            box_filter = []
+
             for PLC in proj.PLCs[ph]:
                 if "HWParams" in PLC["details"]:
                     for i in range(len(PLC["details"]["HWParams"]["BOXES"])):
@@ -183,16 +204,16 @@ class EBtoDB:
         try:
             files = os.listdir(path=EB_path)
         except:
-            dprint("No EB files found for original!", "RED")
-            dprint(f"folder: {EB_path}", "RED")
+            dprint(text="No EB files found for original!", color="RED")
+            dprint(text=f"folder: {EB_path}", color="RED")
             return
 
         pnttypes = []
 
         for file in files:
             if ".EB" in file.upper():
-                dprint(f"- Loading:{file}", "CYAN")
-                EB[file] = EBFile(EB_path, file)
+                dprint(text=f"- Loading:{file}", color="CYAN")
+                EB[file] = ReadEBFile(path=EB_path, filename=file)
                 pnttypes += EB[file].get_point_types()
                 EB[file].create_DB()
 
@@ -201,9 +222,9 @@ class EBtoDB:
         pnttypes = ["TOTAL"] + pnttypes
         df_EB = {}
 
-        check_folder(Export_output_path)
+        check_folder(folder=Export_output_path)
         with pd.ExcelWriter(
-            EB_path + EB_output_file, engine="openpyxl", mode="w"
+            path=EB_path + EB_output_file, engine="openpyxl", mode="w"
         ) as writer:
             for sheet in pnttypes:
                 df_EB[sheet] = pd.DataFrame()
@@ -211,7 +232,7 @@ class EBtoDB:
                     if ".EB" in file.upper():
                         if sheet in EB[file].EBDB:
                             df_EB[sheet] = pd.concat(
-                                [df_EB[sheet], EB[file].EBDB[sheet]]
+                                objs=[df_EB[sheet], EB[file].EBDB[sheet]]
                             )
 
                 columns = sorted(df_EB[sheet].columns)
@@ -222,9 +243,12 @@ class EBtoDB:
                 df_EB[sheet] = df_EB[sheet][columns]
 
                 if pre_filter:
-                    dprint(f"- Filtering {sheet}", "GREEN")
+                    dprint(f"- Filtering {sheet}", color="GREEN")
                     df_EB[sheet]["PLC"] = df_EB[sheet].apply(
-                        lambda row: func_assignPLC(row, box_filter, UCN_filter), axis=1
+                        lambda row: func_assignPLC(
+                            row=row, boxes=box_filter, UCN=UCN_filter
+                        ),
+                        axis=1,
                     )
                     columns = list(df_EB[sheet].columns)
                     columns.pop(columns.index("PLC"))
@@ -235,21 +259,21 @@ class EBtoDB:
                     df_EB[sheet]["PLC"].replace("", np.nan, inplace=True)
                     df_EB[sheet] = df_EB[sheet].dropna(subset=["PLC"])
 
-                dprint(f"- Writing converted EB {sheet}", "YELLOW")
+                dprint(f"- Writing converted EB {sheet}", color="YELLOW")
                 df_EB[sheet].to_excel(writer, sheet_name=sheet, index=False)
         if Export_output_file != "":
             with pd.ExcelWriter(
                 Export_output_path + Export_output_file, engine="openpyxl", mode="w"
             ) as writer:
-                dprint(f"- Writing DCS Export", "YELLOW")
+                dprint(text=f"- Writing DCS Export", color="YELLOW")
                 df_EB["TOTAL"].to_excel(writer, sheet_name="TOTAL", index=False)
         if self.open:
-            dprint("- Formatting Excel", "YELLOW")
-            format_excel(EB_path, EB_output_file, self.open)
+            dprint(text="- Formatting Excel", color="YELLOW")
+            format_excel(path=EB_path, filename=EB_output_file, first_time=self.open)
         if Export_output_file != "":
-            format_excel(Export_output_path, Export_output_file)
+            format_excel(path=Export_output_path, filename=Export_output_file)
 
-    def start(self, project, phase, pre_filter, AM):
+    def start(self, project, phase, pre_filter, AM) -> None:
         print(
             f"{Fore.MAGENTA}Creating EB files {'AM ' if AM else ''}for {Fore.GREEN}{project}{Fore.MAGENTA}, phase {Fore.GREEN}{phase}{Fore.RESET}"
         )
@@ -281,13 +305,13 @@ class EBtoDB:
                 Export_output_file = ""
 
         self.get_EB(
-            EB_path,
-            Export_output_path,
-            EB_output_file,
-            Export_output_file,
-            project,
-            phase,
-            pre_filter,
+            EB_path=EB_path,
+            Export_output_path=Export_output_path,
+            EB_output_file=EB_output_file,
+            Export_output_file=Export_output_file,
+            project=project,
+            phase=phase,
+            pre_filter=pre_filter,
         )
 
         print(
@@ -304,25 +328,25 @@ def get_eb_files(proj, phase, pre_filter=False, AM=False) -> pd.DataFrame:
         filename = projpath + f"EB\\{phase}\\{proj}_export_EB_total_{phase}.xlsx"
     else:
         filename = projpath + f"EB\\{phase}\\AM\\{proj}_export_EB_AM_{phase}.xlsx"
-    if not file_exists(filename):
-        dprint(f"{filename} not found, creating new files from EB", "GREEN")
-        EBtoDB(proj, phase, open=False, pre_filter=pre_filter, AM=AM)
+    if not file_exists(filename=filename):
+        dprint(text=f"{filename} not found, creating new files from EB", color="GREEN")
+        EBtoDB(project=proj, phase=phase, open=False, pre_filter=pre_filter, AM=AM)
     try:
-        dprint(f"- Loading {'AM' if AM else 'EB'} files {phase}", "CYAN")
+        dprint(text=f"- Loading {'AM' if AM else 'EB'} files {phase}", color="CYAN")
         my_eb = pd.read_excel(
-            filename,
+            io=filename,
             sheet_name=None,
         )
         sheet = "TOTAL"
         return my_eb["TOTAL"]
     except FileNotFoundError:
         print(f"{ERROR}ERROR: file {filename} not found{RESET}")
-        exit(f"{ERROR}ABORTED: File not found{RESET}")
+        exit(code=f"{ERROR}ABORTED: File not found{RESET}")
 
 
-def main():
-    system("cls")
-    project = EBtoDB("RVC_AM", "Original", pre_filter=False, AM=True)
+def main() -> None:
+    system(command="cls")
+    project = EBtoDB(project="PGPMODC", phase="Original", pre_filter=False, AM=False)
 
 
 if __name__ == "__main__":

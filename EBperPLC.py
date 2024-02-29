@@ -64,7 +64,7 @@ class EBFile:
         DB[cur_type].append(cur_item)
         self.EBDB = {}
         for sheet in DB.keys():
-            self.EBDB[sheet] = pd.DataFrame.from_dict(DB[sheet]).fillna("")
+            self.EBDB[sheet] = pd.DataFrame.from_records(DB[sheet]).fillna("")
             self.EBDB[sheet]["Source"] = self.source
             columns = sorted(self.EBDB[sheet].columns)
             columns.pop(columns.index("&T"))
