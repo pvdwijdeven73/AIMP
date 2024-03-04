@@ -4,7 +4,8 @@ import numpy as np
 from simpledbf import Dbf5
 from routines import format_excel, ProjDetails, read_db  # ,ErrorLog
 from colorama import Fore
-from pandasgui import show as show_df
+
+# from pandasgui import show as show_df
 
 
 class CheckFSC2SM:
@@ -1145,7 +1146,7 @@ class CheckFSC2SM:
 
 
 def main():
-    project = CheckFSC2SM("CVP_MOD9", "FAT")
+    project = CheckFSC2SM("CVP_MOD11", "Papercheck1")
 
 
 if __name__ == "__main__":
