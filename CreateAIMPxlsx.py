@@ -27,6 +27,7 @@ class CreateAIMPxlsx:
         for curFile in PLCs:
             print(f"  - Reading {curFile[0]}")
             curDB = read_db(path, curFile[0])
+            assert isinstance(curDB, pd.DataFrame)
             curDB.insert(0, "PLC", curFile[1])
             lst_db_FSC.append(curDB)
             if len(lst_db_FSC) > 1:
@@ -323,9 +324,7 @@ class CreateAIMPxlsx:
 
 
 def main():
-    project = CreateAIMPxlsx(
-        "CVP_MOD13", "Original", "2023-11-10", "Pascal van de Wijdeven"
-    )
+    project = CreateAIMPxlsx("GIRB50", "Original", "2024-03-13", "Akash Soerdjbalie")
 
 
 if __name__ == "__main__":

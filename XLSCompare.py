@@ -136,6 +136,7 @@ class XLSCompare:
     ):
         print("Reading old database")
         DB_old = read_db(path, file_old)
+        assert isinstance(DB_old, pd.DataFrame)
         DB_old_columns = DB_old.columns
 
         print("- Writing old database")
@@ -147,6 +148,7 @@ class XLSCompare:
 
         print("Reading new database")
         DB_new = read_db(path, file_new)
+        assert isinstance(DB_new, pd.DataFrame)
         DB_new_columns = DB_new.columns
 
         print("- Writing new database")
@@ -197,10 +199,10 @@ def main():
     # Requires file old, file new and a unique comparison column
     path = "Test\\"
     output_file = "Differences.xlsx"
-    file_old = "Test_EB_total_old.xlsx"
-    unique_old = ["&N"]
-    file_new = "Test_EB_total.xlsx"
-    unique_new = ["&N"]
+    file_old = "RVC_HV8 (Original).xls"
+    unique_old = ["PointType", "TagNumber"]
+    file_new = "RVC_HV8.xls"
+    unique_new = ["PointType", "TagNumber"]
     project = XLSCompare(path, output_file, file_old, unique_old, file_new, unique_new)
 
 

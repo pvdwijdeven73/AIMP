@@ -1347,7 +1347,7 @@ class CheckFSC2SM:
 
 
 def main() -> None:
-    project = CheckFSC2SM(project="CVP_MOD12", phase="Papercheck1")
+    project = CheckFSC2SM(project="PGPMODC", phase="Papercheck1")
 
 
 if __name__ == "__main__":
